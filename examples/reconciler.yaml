@@ -1,0 +1,22 @@
+litellm:
+  base_url: http://litellm:4000
+  master_key_env: LITELLM_MASTER_KEY
+  request_timeout_seconds: 10
+
+reconcile:
+  interval_seconds: 15
+  failure_threshold: 3
+  deletion_grace_seconds: 60
+  startup_delay_seconds: 5
+  dry_run: false
+
+listen_address: 0.0.0.0:9090
+servers:
+  - id: gpu-server-01
+    base_url: http://vllm-1:8000/v1
+    api_key_env: VLLM_1_API_KEY
+    enabled: true
+  - id: gpu-server-02
+    base_url: http://vllm-2:8000/v1
+    api_key_env: VLLM_2_API_KEY
+    enabled: true

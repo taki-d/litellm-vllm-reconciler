@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U litellm -d litellm"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+  litellm:
+    image: ghcr.io/berriai/litellm:main-v1.81.12-stable.2
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      DATABASE_URL: postgresql://litellm:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/litellm
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:?set LITELLM_SALT_KEY}
+      COMPANY_API_KEY: ${COMPANY_API_KEY:-}
+      VLLM_1_API_KEY: ${VLLM_1_API_KEY:-}
+      VLLM_2_API_KEY: ${VLLM_2_API_KEY:-}
+    volumes:
+      - ./examples/litellm.yaml:/app/config.yaml:ro
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+  reconciler:
+    build: .
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY}
+      VLLM_1_API_KEY: ${VLLM_1_API_KEY:-}
+      VLLM_2_API_KEY: ${VLLM_2_API_KEY:-}
+    volumes:
+      - ./config.yaml:/etc/reconciler/config.yaml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      - litellm
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    # Increase for large deployment counts; in-flight cycles finish on SIGTERM.
+    stop_grace_period: 5m
+    restart: unless-stopped
+volumes:
+  postgres-data:
