@@ -2,10 +2,11 @@
 
 import json
 import os
+from http.client import HTTPException
 from pathlib import Path
 import subprocess
 import time
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 
@@ -37,7 +38,7 @@ def wait_for(description, check, timeout=180):
             result = check()
             if result:
                 return result
-        except (URLError, TimeoutError, ValueError, AssertionError) as error:
+        except (OSError, HTTPException, ValueError, AssertionError) as error:
             last_error = error
         time.sleep(2)
     raise AssertionError(f"Timed out waiting for {description}: {last_error}")

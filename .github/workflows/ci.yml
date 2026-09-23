@@ -11,6 +11,7 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
+      - run: python3 -m unittest discover -s tests/e2e -p 'test_*.py'
   model-registration-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
