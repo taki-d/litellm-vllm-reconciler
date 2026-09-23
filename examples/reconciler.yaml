@@ -1,3 +1,4 @@
+# URLs must be reachable from the reconciler process or container.
 litellm:
   base_url: http://litellm:4000
   master_key_env: LITELLM_MASTER_KEY
@@ -12,8 +13,10 @@ reconcile:
 
 listen_address: 0.0.0.0:9090
 servers:
+  # Keep source IDs stable when a server's hostname or IP address changes.
   - id: gpu-server-01
     base_url: http://vllm-1:8000/v1
+    # Set this variable on both the reconciler and LiteLLM; omit for no auth.
     api_key_env: VLLM_1_API_KEY
     enabled: true
   - id: gpu-server-02

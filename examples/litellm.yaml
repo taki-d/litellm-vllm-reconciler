@@ -1,3 +1,4 @@
+# Keep fixed APIs here. The reconciler registers vLLM models in the database.
 model_list:
   - model_name: company-gpt
     litellm_params:
