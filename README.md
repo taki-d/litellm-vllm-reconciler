@@ -93,4 +93,20 @@ cargo test --locked
 
 HTTPモックによる統合テストで登録、再起動後の冪等性、モデル切替、削除猶予、障害回復、固定モデル保護、更新、dry-run、リトライ、readinessを検証します。GPUや本物のLiteLLM／PostgreSQLはこのテストには含まれません。
 
+GitHub Actionsの `model-registration-e2e` ジョブでは、別途Dockerで本物のLiteLLM／PostgreSQLとmock vLLMを起動します。mockのモデル一覧を空→1件→2件に変更し、実際のreconcilerコンテナから登録して `/model/info` と `/v1/models` を検証します。dry-runで変更されないこと、プロセス再起動後もdeployment IDと件数が変わらないこと、YAMLの固定モデルが残ることも確認します。GPU、外部LLM API、GitHub Secretsは不要です。
+
+Dockerが動く環境では、同じE2Eテストをローカルでも実行できます（14000、18000ポートを使用）。各実行には空のテスト用DBが必要です。
+
+```sh
+export COMPOSE_FILE=tests/e2e/compose.yaml
+export COMPOSE_PROJECT_NAME=reconciler-e2e
+docker compose build reconciler
+docker compose up -d db litellm mock-vllm
+python3 tests/e2e/verify.py
+docker compose logs --no-color
+docker compose down --volumes --remove-orphans
+```
+
+テストが失敗した場合も最後の停止・削除コマンドを実行してください。CIでは成否にかかわらずサービスログを表示してコンテナとDBを削除します。`tests/e2e` 内のキーは隔離したテスト環境専用のダミー値です。mockはモデル発見APIのみを実装し、推論や負荷分散の検証は行いません。
+
 実環境での受け入れ確認では、2台で同モデルを起動して `/v1/models` の表示と両バックエンドへのリクエスト分散を確認し、片方停止・両方停止・モデル切替を試してください。固定モデルが残ること、OpenWebUI用キーで新規モデルへアクセスできることも確認対象です。

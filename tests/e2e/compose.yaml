@@ -1,0 +1,49 @@
+# Isolated CI environment. All credentials below are public test fixtures.
+services:
+  db:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: e2e-db-password
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U litellm -d litellm"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  mock-vllm:
+    image: python:3.12-slim-bookworm
+    command: [python, -u, /mock/server.py]
+    environment:
+      VLLM_API_KEY: e2e-vllm-key
+    volumes:
+      - ./mock_vllm.py:/mock/server.py:ro
+    ports:
+      - "127.0.0.1:18000:8000"
+  litellm:
+    image: ghcr.io/berriai/litellm:main-v1.81.12-stable.2
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      DATABASE_URL: postgresql://litellm:e2e-db-password@db:5432/litellm
+      LITELLM_MASTER_KEY: sk-e2e-master-key
+      LITELLM_SALT_KEY: e2e-persistent-salt-key
+      VLLM_API_KEY: e2e-vllm-key
+    volumes:
+      - ./litellm.yaml:/app/config.yaml:ro
+    ports:
+      - "127.0.0.1:14000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+  reconciler:
+    build:
+      context: ../..
+    command: ["--config", "/etc/reconciler/config.yaml", "--once"]
+    environment:
+      LITELLM_MASTER_KEY: sk-e2e-master-key
+      VLLM_API_KEY: e2e-vllm-key
+    volumes:
+      - ./reconciler.yaml:/etc/reconciler/config.yaml:ro
+    # This is a one-shot process, not the long-running health server.
+    healthcheck:
+      disable: true

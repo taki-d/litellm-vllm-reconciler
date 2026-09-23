@@ -1,0 +1,10 @@
+litellm:
+  base_url: http://litellm:4000
+  master_key_env: LITELLM_MASTER_KEY
+  request_timeout_seconds: 10
+reconcile:
+  startup_delay_seconds: 0
+servers:
+  - id: mock-gpu-01
+    base_url: http://mock-vllm:8000/v1
+    api_key_env: VLLM_API_KEY

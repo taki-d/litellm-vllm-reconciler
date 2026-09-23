@@ -11,3 +11,25 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
+  model-registration-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      COMPOSE_FILE: tests/e2e/compose.yaml
+      COMPOSE_PROJECT_NAME: reconciler-e2e
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build reconciler image
+        run: docker compose build reconciler
+      - name: Start PostgreSQL, LiteLLM and mock vLLM
+        run: docker compose up -d db litellm mock-vllm
+      - name: Verify model registration through real LiteLLM
+        run: python3 tests/e2e/verify.py
+      - name: Print service logs
+        if: always()
+        run: docker compose logs --no-color
+      - name: Clean up containers and database
+        if: always()
+        run: docker compose down --volumes --remove-orphans

@@ -1,0 +1,11 @@
+model_list:
+  - model_name: fixed-company-model
+    litellm_params:
+      model: openai/fixed-company-model
+      api_base: http://mock-vllm:8000/v1
+      api_key: os.environ/VLLM_API_KEY
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  store_model_in_db: true
+router_settings:
+  routing_strategy: simple-shuffle
